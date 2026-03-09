@@ -7,7 +7,7 @@ Author: Wesley Foreman (wforeman58@gmail.com)
 Copyright 2026. All rights reserved.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 from fastapi import HTTPException, Depends
 from sqlalchemy.orm import Session
@@ -40,7 +40,8 @@ async def get_proxy_key(
 
 def check_rate_limit(api_key: APIKey, db: Session):
     """Check and update rate limit. Raises 429 if exceeded."""
-    now = datetime.utcnow()
+    # Use naive UTC (SQLite strips timezone info on read)
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
     if api_key.requests_reset_at and (now - api_key.requests_reset_at).days >= 1:
         api_key.requests_today = 0
         api_key.requests_reset_at = now

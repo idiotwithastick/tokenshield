@@ -10,6 +10,7 @@ Copyright 2026. All rights reserved.
 
 import os
 import sys
+from contextlib import asynccontextmanager
 
 sys.path.insert(0, os.path.dirname(__file__))
 
@@ -22,12 +23,22 @@ from api.proxy import router as proxy_router
 from api.routes import router as status_router
 from api.billing import router as billing_router
 
+
+@asynccontextmanager
+async def lifespan(app):
+    """Startup/shutdown lifecycle."""
+    init_db()
+    print("TokenShield started. Cache engine active.")
+    yield
+
+
 app = FastAPI(
     title="TokenShield",
     description="Token-saving proxy for agentic AI workflows",
     version="1.0.0",
     docs_url="/api/docs",
     redoc_url=None,
+    lifespan=lifespan,
 )
 
 # Proxy routes (provider-compatible endpoints)
@@ -36,12 +47,6 @@ app.include_router(proxy_router)
 app.include_router(status_router)
 # Billing routes
 app.include_router(billing_router)
-
-
-@app.on_event("startup")
-async def startup():
-    init_db()
-    print("TokenShield started. Cache engine active.")
 
 
 # Static portal

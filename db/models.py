@@ -13,7 +13,7 @@ Copyright 2026. All rights reserved.
 """
 
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import (
     Column, String, Integer, Float, Text, Boolean,
     DateTime, ForeignKey, Index
@@ -47,7 +47,7 @@ class CachedResponse(Base):
     # Usage tracking
     hit_count = Column(Integer, default=0)
     last_hit_at = Column(DateTime, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
     expires_at = Column(DateTime, nullable=True)
 
     __table_args__ = (
@@ -81,7 +81,7 @@ class APIKey(Base):
 
     # Usage counters
     requests_today = Column(Integer, default=0)
-    requests_reset_at = Column(DateTime, default=datetime.utcnow)
+    requests_reset_at = Column(DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
     total_tokens_saved = Column(Integer, default=0)
     total_requests = Column(Integer, default=0)
     total_cache_hits = Column(Integer, default=0)
@@ -90,12 +90,12 @@ class APIKey(Base):
     stripe_customer_id = Column(String(128), nullable=True)
     stripe_subscription_id = Column(String(128), nullable=True)
 
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
 
     usage_logs = relationship("UsageLog", back_populates="api_key")
 
     def is_rate_limited(self) -> bool:
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc).replace(tzinfo=None)
         if self.requests_reset_at and (now - self.requests_reset_at).days >= 1:
             self.requests_today = 0
             self.requests_reset_at = now
@@ -121,7 +121,7 @@ class UsageLog(Base):
     tokens_saved = Column(Integer, default=0)
     response_ms = Column(Float, default=0.0)
     status_code = Column(Integer, default=200)
-    timestamp = Column(DateTime, default=datetime.utcnow)
+    timestamp = Column(DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
 
     api_key = relationship("APIKey", back_populates="usage_logs")
 

@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TokenShield — Dashboard</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+
+<nav>
+  <div class="container">
+    <span class="logo">TokenShield</span>
+    <ul>
+      <li><a href="/">Home</a></li>
+      <li><a href="/docs">Docs</a></li>
+      <li><a href="/playground">Playground</a></li>
+      <li><a href="/dashboard" style="color:var(--text)">Dashboard</a></li>
+    </ul>
+  </div>
+</nav>
+
+<div class="container">
+
+  <!-- Sign up / Login -->
+  <section id="auth-section">
+    <h2 style="font-size:28px;margin-bottom:16px;">Get Your Proxy Key</h2>
+
+    <div id="signup-form" class="card" style="max-width:400px;">
+      <h3>Sign Up — Free</h3>
+      <p style="margin-bottom:16px;">100 proxied requests/day. No credit card needed.</p>
+      <input type="email" id="signup-email" placeholder="your@email.com" style="margin-bottom:12px;">
+      <button class="btn btn-primary" onclick="signup()" id="signup-btn">Create Proxy Key</button>
+      <div id="signup-result" style="margin-top:12px;font-family:var(--mono);font-size:13px;"></div>
+    </div>
+
+    <div style="margin-top:16px;">
+      <p style="color:var(--text-dim);font-size:13px;">Already have a key? Enter it below to see your dashboard.</p>
+      <div style="display:flex;gap:8px;margin-top:8px;max-width:400px;">
+        <input type="text" id="api-key-input" placeholder="sk-ts-...">
+        <button class="btn btn-outline" onclick="loadDashboard()">Load</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Dashboard (hidden until key entered) -->
+  <section id="dashboard-section" style="display:none;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <h2 style="font-size:28px;">Dashboard</h2>
+      <button class="btn btn-outline" onclick="logout()" style="font-size:12px;padding:6px 16px;">Sign Out</button>
+    </div>
+
+    <div class="stat-grid" id="stats">
+      <div class="card stat-card">
+        <div class="number" id="stat-saved">-</div>
+        <div class="label">Tokens Saved</div>
+      </div>
+      <div class="card stat-card">
+        <div class="number" id="stat-hits">-</div>
+        <div class="label">Cache Hits</div>
+      </div>
+      <div class="card stat-card">
+        <div class="number" id="stat-requests">-</div>
+        <div class="label">Total Requests</div>
+      </div>
+      <div class="card stat-card">
+        <div class="number" id="stat-tier">-</div>
+        <div class="label">Current Tier</div>
+      </div>
+    </div>
+
+    <!-- Usage -->
+    <div class="card" style="margin-top:16px;">
+      <h3>Today's Usage</h3>
+      <div class="attestation" style="border:none;padding:0;">
+        <div class="row"><span>Requests Today</span><span id="usage-today">-</span></div>
+        <div class="row"><span>Daily Limit</span><span id="usage-limit">-</span></div>
+        <div class="row"><span>Cache Hit Rate</span><span class="safe" id="usage-hitrate">-</span></div>
+      </div>
+    </div>
+
+    <!-- Savings by Provider -->
+    <div class="card" style="margin-top:16px;">
+      <h3>Savings by Provider</h3>
+      <div id="savings-breakdown" style="margin-top:12px;">
+        <p style="color:var(--text-dim);font-size:13px;">Loading...</p>
+      </div>
+    </div>
+
+    <!-- Your Key -->
+    <div class="card" style="margin-top:16px;">
+      <h3>Your Proxy Key</h3>
+      <div style="font-family:var(--mono);font-size:14px;padding:8px 0;color:var(--accent-glow);" id="display-key">-</div>
+    </div>
+
+    <!-- Actions -->
+    <div class="card" style="margin-top:16px;">
+      <h3>Actions</h3>
+      <div style="display:flex;gap:8px;margin-top:8px;">
+        <button class="btn btn-outline" onclick="clearCache()">Clear Cache</button>
+        <button class="btn btn-outline" onclick="loadDashboard()">Refresh</button>
+      </div>
+      <div id="action-result" style="margin-top:8px;font-family:var(--mono);font-size:13px;"></div>
+    </div>
+  </section>
+
+</div>
+
+<footer>
+  <div class="container">
+    TokenShield &copy; 2026. Save tokens on every AI API call.
+  </div>
+</footer>
+
+<script>
+const STORAGE_KEY = 'tokenshield_api_key';
+
+// Check for saved key on load
+window.addEventListener('DOMContentLoaded', () => {
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if (saved) {
+    document.getElementById('api-key-input').value = saved;
+    loadDashboard();
+  }
+});
+
+async function signup() {
+  const email = document.getElementById('signup-email').value.trim();
+  if (!email) return;
+
+  const btn = document.getElementById('signup-btn');
+  const result = document.getElementById('signup-result');
+  btn.disabled = true;
+  btn.textContent = 'Creating...';
+
+  try {
+    const resp = await fetch('/v1/signup', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({email}),
+    });
+    const data = await resp.json();
+
+    if (resp.ok) {
+      localStorage.setItem(STORAGE_KEY, data.api_key);
+      result.innerHTML = `<span style="color:var(--green)">Key created!</span><br>` +
+        `<code style="color:var(--accent-glow)">${data.api_key}</code><br>` +
+        `<span style="color:var(--amber);font-size:11px;">Save this key. It cannot be retrieved later.</span>`;
+      document.getElementById('api-key-input').value = data.api_key;
+      setTimeout(() => loadDashboard(), 1500);
+    } else {
+      result.innerHTML = `<span style="color:var(--red)">${data.detail || 'Error'}</span>`;
+    }
+  } catch (e) {
+    result.innerHTML = `<span style="color:var(--red)">Error: ${e.message}</span>`;
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Create Proxy Key';
+}
+
+async function loadDashboard() {
+  const key = document.getElementById('api-key-input').value.trim();
+  if (!key) return;
+
+  localStorage.setItem(STORAGE_KEY, key);
+
+  try {
+    // Load status
+    const resp = await fetch('/v1/status', {
+      headers: {'X-Proxy-Key': key},
+    });
+
+    if (!resp.ok) {
+      alert('Invalid proxy key or server error');
+      return;
+    }
+
+    const data = await resp.json();
+
+    // Show dashboard
+    document.getElementById('auth-section').style.display = 'none';
+    document.getElementById('dashboard-section').style.display = 'block';
+
+    // Populate stats
+    const acct = data.account;
+    document.getElementById('stat-saved').textContent = (acct.total_tokens_saved || 0).toLocaleString();
+    document.getElementById('stat-hits').textContent = (acct.total_cache_hits || 0).toLocaleString();
+    document.getElementById('stat-requests').textContent = (acct.total_requests || 0).toLocaleString();
+    document.getElementById('stat-tier').textContent = (acct.tier || 'free').toUpperCase();
+    document.getElementById('display-key').textContent = key;
+    document.getElementById('usage-today').textContent = acct.requests_today || 0;
+    document.getElementById('usage-limit').textContent = (acct.request_limit || 100).toLocaleString();
+
+    const hitRate = data.cache && data.cache.hit_rate != null
+      ? (data.cache.hit_rate * 100).toFixed(1) + '%'
+      : '0%';
+    document.getElementById('usage-hitrate').textContent = hitRate;
+
+    // Load savings breakdown
+    loadSavings(key);
+
+  } catch (e) {
+    alert('Connection error: ' + e.message);
+  }
+}
+
+async function loadSavings(key) {
+  try {
+    const resp = await fetch('/v1/savings', {
+      headers: {'X-Proxy-Key': key},
+    });
+    if (!resp.ok) return;
+
+    const data = await resp.json();
+    const container = document.getElementById('savings-breakdown');
+
+    const providers = Object.entries(data.by_provider || {});
+    if (providers.length > 0) {
+      let html = '<div class="attestation" style="border:none;padding:0;">';
+      for (const [name, stats] of providers) {
+        html += `<div class="row">
+          <span>${name}</span>
+          <span class="safe">${(stats.tokens_saved || 0).toLocaleString()} saved (${stats.cache_hits || 0} hits / ${stats.requests || 0} reqs)</span>
+        </div>`;
+      }
+      html += `<div class="row" style="margin-top:8px;font-weight:700;">
+        <span>Total Savings</span>
+        <span class="safe">${data.savings_percent || 0}%</span>
+      </div>`;
+      html += '</div>';
+      container.innerHTML = html;
+    } else {
+      container.innerHTML = '<p style="color:var(--text-dim);font-size:13px;">No usage yet. Send your first proxied request to see savings.</p>';
+    }
+  } catch (e) {
+    // Ignore savings load failure
+  }
+}
+
+async function clearCache() {
+  const key = localStorage.getItem(STORAGE_KEY);
+  if (!key) return;
+
+  const result = document.getElementById('action-result');
+  try {
+    const resp = await fetch('/v1/cache/clear', {
+      method: 'DELETE',
+      headers: {'X-Proxy-Key': key},
+    });
+    const data = await resp.json();
+    if (resp.ok) {
+      result.innerHTML = `<span style="color:var(--green)">Cache cleared. ${data.cleared || 0} entries removed.</span>`;
+    } else {
+      result.innerHTML = `<span style="color:var(--red)">${data.detail || 'Error'}</span>`;
+    }
+  } catch (e) {
+    result.innerHTML = `<span style="color:var(--red)">Error: ${e.message}</span>`;
+  }
+}
+
+function logout() {
+  localStorage.removeItem(STORAGE_KEY);
+  document.getElementById('auth-section').style.display = 'block';
+  document.getElementById('dashboard-section').style.display = 'none';
+  document.getElementById('api-key-input').value = '';
+}
+</script>
+
+</body>
+</html>

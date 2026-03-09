@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TokenShield — Setup Guide</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+
+<nav>
+  <div class="container">
+    <span class="logo">TokenShield</span>
+    <ul>
+      <li><a href="/">Home</a></li>
+      <li><a href="/docs" style="color:var(--text)">Docs</a></li>
+      <li><a href="/playground">Playground</a></li>
+      <li><a href="/dashboard">Dashboard</a></li>
+    </ul>
+  </div>
+</nav>
+
+<div class="container">
+  <section>
+    <h1 style="font-size:32px;margin-bottom:8px;">Setup Guide</h1>
+    <p style="color:var(--text-dim);margin-bottom:32px;">
+      Change your base URL. Add one header. Done.
+    </p>
+
+    <!-- Step 1 -->
+    <div class="card" style="margin-bottom:24px;">
+      <h3>1. Get Your Proxy Key</h3>
+      <p>Sign up on the <a href="/dashboard">dashboard</a> to get a free <code style="color:var(--accent-glow)">sk-ts-...</code> proxy key. No credit card needed.</p>
+    </div>
+
+    <!-- Step 2 -->
+    <div class="card" style="margin-bottom:24px;">
+      <h3>2. Change Your Base URL</h3>
+      <p>Point your tool at TokenShield instead of the provider directly.</p>
+      <div class="code-block">
+<span class="comment"># Claude (Anthropic)</span>
+Before: https://api.anthropic.com
+After:  https://your-proxy.repl.co
+
+<span class="comment"># OpenAI</span>
+Before: https://api.openai.com
+After:  https://your-proxy.repl.co
+
+<span class="comment"># Google Gemini</span>
+Before: https://generativelanguage.googleapis.com
+After:  https://your-proxy.repl.co
+      </div>
+    </div>
+
+    <!-- Step 3 -->
+    <div class="card" style="margin-bottom:24px;">
+      <h3>3. Add the Proxy Key Header</h3>
+      <p>Add <code style="color:var(--accent-glow)">X-Proxy-Key</code> to your requests. Keep your original provider auth header as-is.</p>
+      <div class="code-block">
+<span class="comment"># Claude example</span>
+curl https://your-proxy.repl.co/v1/messages \
+  -H "<span class="key">x-api-key</span>: <span class="value">sk-ant-your-claude-key</span>" \
+  -H "<span class="key">X-Proxy-Key</span>: <span class="value">sk-ts-your-proxy-key</span>" \
+  -H "<span class="key">content-type</span>: <span class="value">application/json</span>" \
+  -d '{
+    "<span class="key">model</span>": "<span class="string">claude-sonnet-4-20250514</span>",
+    "<span class="key">max_tokens</span>": <span class="value">1024</span>,
+    "<span class="key">messages</span>": [{"<span class="key">role</span>": "<span class="string">user</span>", "<span class="key">content</span>": "<span class="string">Hello</span>"}]
+  }'
+
+<span class="comment"># OpenAI example</span>
+curl https://your-proxy.repl.co/v1/chat/completions \
+  -H "<span class="key">Authorization</span>: Bearer <span class="value">sk-your-openai-key</span>" \
+  -H "<span class="key">X-Proxy-Key</span>: <span class="value">sk-ts-your-proxy-key</span>" \
+  -H "<span class="key">content-type</span>: <span class="value">application/json</span>" \
+  -d '{
+    "<span class="key">model</span>": "<span class="string">gpt-4o</span>",
+    "<span class="key">messages</span>": [{"<span class="key">role</span>": "<span class="string">user</span>", "<span class="key">content</span>": "<span class="string">Hello</span>"}]
+  }'
+      </div>
+    </div>
+
+    <!-- API Endpoints -->
+    <h2 style="margin-top:40px;margin-bottom:16px;">Proxy Endpoints</h2>
+    <div class="card" style="margin-bottom:24px;">
+      <p>Each endpoint mirrors the provider's original API. Request and response bodies are identical.</p>
+      <div class="code-block">
+<span class="comment"># Claude (Anthropic)</span>
+POST /v1/messages
+
+<span class="comment"># OpenAI</span>
+POST /v1/chat/completions
+
+<span class="comment"># Google Gemini</span>
+POST /v1beta/models/{model}:generateContent
+      </div>
+    </div>
+
+    <!-- Response Headers -->
+    <h2 style="margin-top:40px;margin-bottom:16px;">Response Headers</h2>
+    <div class="card" style="margin-bottom:24px;">
+      <p>TokenShield adds headers to every response so you know what happened.</p>
+      <div class="code-block">
+<span class="comment"># Cache HIT — response came from cache, zero tokens burned</span>
+<span class="key">X-Cache-Status</span>: <span class="string">HIT</span>
+<span class="key">X-Tokens-Saved</span>: <span class="value">1247</span>
+<span class="key">X-Proxy-Time-Ms</span>: <span class="value">2.3</span>
+
+<span class="comment"># Cache MISS — forwarded to provider, response cached for next time</span>
+<span class="key">X-Cache-Status</span>: <span class="string">MISS</span>
+<span class="key">X-Tokens-Used</span>: <span class="value">1247</span>
+<span class="key">X-Proxy-Time-Ms</span>: <span class="value">245.1</span>
+      </div>
+    </div>
+
+    <!-- Account Endpoints -->
+    <h2 style="margin-top:40px;margin-bottom:16px;">Account Endpoints</h2>
+
+    <div class="card" style="margin-bottom:24px;">
+      <h3><span style="color:var(--accent-glow);font-family:var(--mono);">GET</span> /v1/status</h3>
+      <p>Your account stats, cache stats, and savings summary.</p>
+      <div class="code-block">
+<span class="comment"># Auth: X-Proxy-Key header</span>
+curl https://your-proxy.repl.co/v1/status \
+  -H "<span class="key">X-Proxy-Key</span>: <span class="value">sk-ts-your-proxy-key</span>"
+
+<span class="comment"># Response</span>
+{
+  "<span class="key">account</span>": {
+    "<span class="key">tier</span>": "<span class="string">pro</span>",
+    "<span class="key">requests_today</span>": <span class="value">142</span>,
+    "<span class="key">request_limit</span>": <span class="value">5000</span>,
+    "<span class="key">total_tokens_saved</span>": <span class="value">84520</span>,
+    "<span class="key">total_cache_hits</span>": <span class="value">89</span>,
+    "<span class="key">total_requests</span>": <span class="value">203</span>
+  },
+  "<span class="key">cache</span>": {
+    "<span class="key">entries</span>": <span class="value">156</span>,
+    "<span class="key">hit_rate</span>": <span class="value">0.438</span>
+  }
+}
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:24px;">
+      <h3><span style="color:var(--accent-glow);font-family:var(--mono);">GET</span> /v1/savings</h3>
+      <p>Token savings breakdown by provider.</p>
+    </div>
+
+    <div class="card" style="margin-bottom:24px;">
+      <h3><span style="color:var(--red);font-family:var(--mono);">DELETE</span> /v1/cache/clear</h3>
+      <p>Clear your cached responses. Useful if you want fresh responses from the provider.</p>
+    </div>
+
+  </section>
+</div>
+
+<footer>
+  <div class="container">
+    TokenShield &copy; 2026. Save tokens on every AI API call.
+  </div>
+</footer>
+
+</body>
+</html>

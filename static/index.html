@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TokenShield — Cut Your AI API Bill</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+
+<nav>
+  <div class="container">
+    <span class="logo">TokenShield</span>
+    <ul>
+      <li><a href="/docs">Docs</a></li>
+      <li><a href="/playground">Playground</a></li>
+      <li><a href="/dashboard">Dashboard</a></li>
+    </ul>
+  </div>
+</nav>
+
+<div class="container">
+
+  <div class="hero">
+    <h1>Cut Your AI API Bill</h1>
+    <p>Drop-in proxy for Claude, OpenAI, and Gemini. Caches responses by semantic similarity. Repeat prompts return instantly — zero tokens burned.</p>
+    <a href="#pricing" class="btn btn-primary">Get API Key — Free</a>
+    &nbsp;
+    <a href="/docs" class="btn btn-outline">Setup in 2 Minutes</a>
+  </div>
+
+  <section>
+    <h2 style="text-align:center;font-size:28px;margin-bottom:8px;">How It Works</h2>
+    <p style="text-align:center;color:var(--text-dim);margin-bottom:32px;">Change your base URL. Add one header. Done.</p>
+    <div class="code-block">
+<span class="comment"># Before — calls Claude API directly (burns tokens every time)</span>
+curl https://api.anthropic.com/v1/messages \
+  -H "<span class="key">x-api-key</span>: <span class="value">sk-ant-your-key</span>" \
+  -d '{"<span class="key">model</span>": "<span class="string">claude-sonnet-4-20250514</span>", ...}'
+
+<span class="comment"># After — same request through TokenShield (cached responses = free)</span>
+curl https://your-proxy.repl.co/v1/messages \
+  -H "<span class="key">x-api-key</span>: <span class="value">sk-ant-your-key</span>" \
+  -H "<span class="key">X-Proxy-Key</span>: <span class="value">sk-ts-your-proxy-key</span>" \
+  -d '{"<span class="key">model</span>": "<span class="string">claude-sonnet-4-20250514</span>", ...}'
+
+<span class="comment"># Response is identical — but check the headers:</span>
+<span class="key">X-Cache-Status</span>: <span class="string">HIT</span>
+<span class="key">X-Tokens-Saved</span>: <span class="value">1,247</span>
+<span class="key">X-Proxy-Time-Ms</span>: <span class="value">2.3</span>
+    </div>
+  </section>
+
+  <section class="features">
+    <h2>Why TokenShield</h2>
+    <div class="grid-3">
+      <div class="card">
+        <h3>Save Tokens, Save Money</h3>
+        <p>Agentic workflows repeat similar prompts constantly — code review, test generation, refactoring. TokenShield catches repeats and returns cached responses instantly.</p>
+      </div>
+      <div class="card">
+        <h3>Drop-In Compatible</h3>
+        <p>Works with Claude, OpenAI, and Gemini. Change the base URL. Keep your existing API key, request format, and tools. Nothing else changes.</p>
+      </div>
+      <div class="card">
+        <h3>Your Keys, Your Data</h3>
+        <p>You provide your own LLM API keys. On cache miss, we forward your request to the provider and cache the response. Keys pass through — we never store them.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2 style="text-align:center;font-size:28px;margin-bottom:32px;">Real Savings on Real Workflows</h2>
+    <div class="grid-3">
+      <div class="card" style="text-align:center;">
+        <div style="font-size:36px;font-weight:800;color:var(--green);">30-60%</div>
+        <p style="margin-top:8px;">Typical prompt overlap in agentic workflows</p>
+      </div>
+      <div class="card" style="text-align:center;">
+        <div style="font-size:36px;font-weight:800;color:var(--accent-glow);">&lt;3ms</div>
+        <p style="margin-top:8px;">Cache hit response time</p>
+      </div>
+      <div class="card" style="text-align:center;">
+        <div style="font-size:36px;font-weight:800;color:var(--amber);">$0</div>
+        <p style="margin-top:8px;">API tokens burned on cache hits</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="pricing" id="pricing">
+    <h2>Pricing</h2>
+    <div class="grid-3">
+      <div class="card price-card">
+        <h3>Free</h3>
+        <div class="price">$0<span>/mo</span></div>
+        <ul>
+          <li>100 proxied requests/day</li>
+          <li>Claude, OpenAI, Gemini</li>
+          <li>Semantic caching</li>
+          <li>Savings reports</li>
+        </ul>
+        <a href="/dashboard" class="btn btn-outline">Get Started</a>
+      </div>
+      <div class="card price-card popular">
+        <h3>Pro</h3>
+        <div class="price">$19<span>/mo</span></div>
+        <ul>
+          <li>5,000 proxied requests/day</li>
+          <li>Claude, OpenAI, Gemini</li>
+          <li>Semantic caching</li>
+          <li>Savings reports</li>
+          <li>Priority support</li>
+        </ul>
+        <a href="/dashboard" class="btn btn-primary">Upgrade</a>
+      </div>
+      <div class="card price-card">
+        <h3>Team</h3>
+        <div class="price">$79<span>/mo</span></div>
+        <ul>
+          <li>50,000 proxied requests/day</li>
+          <li>Claude, OpenAI, Gemini</li>
+          <li>Semantic caching</li>
+          <li>Savings reports</li>
+          <li>Team access</li>
+        </ul>
+        <a href="/dashboard" class="btn btn-outline">Contact Us</a>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<footer>
+  <div class="container">
+    TokenShield &copy; 2026. Save tokens on every AI API call.
+  </div>
+</footer>
+
+</body>
+</html>

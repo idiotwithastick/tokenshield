@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TokenShield — Playground</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+
+<nav>
+  <div class="container">
+    <span class="logo">TokenShield</span>
+    <ul>
+      <li><a href="/">Home</a></li>
+      <li><a href="/docs">Docs</a></li>
+      <li><a href="/playground" style="color:var(--text)">Playground</a></li>
+      <li><a href="/dashboard">Dashboard</a></li>
+    </ul>
+  </div>
+</nav>
+
+<div class="container">
+  <section>
+    <h2 style="font-size:28px;margin-bottom:8px;">Cache Demo</h2>
+    <p style="color:var(--text-dim);margin-bottom:24px;">
+      See how TokenShield catches similar prompts. Send the same prompt twice — the second time is a cache HIT with zero tokens burned.
+    </p>
+
+    <div class="playground-area">
+      <div>
+        <label style="font-size:12px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;">Prompt</label>
+        <textarea id="input" placeholder="Type a prompt here...">Explain the difference between useEffect and useLayoutEffect in React.</textarea>
+        <br>
+        <div style="display:flex;gap:8px;align-items:center;margin-top:8px;">
+          <button class="btn btn-primary" onclick="runDemo()" id="demoBtn">Send Prompt</button>
+          <span id="timing" style="color:var(--text-dim);font-size:13px;"></span>
+        </div>
+      </div>
+      <div>
+        <label style="font-size:12px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;">Result</label>
+        <div id="output" class="code-block" style="min-height:200px;white-space:pre-wrap;">Click "Send Prompt" to test the cache...</div>
+      </div>
+    </div>
+
+    <!-- Quick examples -->
+    <div style="margin-top:24px;">
+      <label style="font-size:12px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;">Try These</label>
+      <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
+        <button class="btn btn-outline" onclick="loadExample('react')">React Hooks</button>
+        <button class="btn btn-outline" onclick="loadExample('python')">Python Tips</button>
+        <button class="btn btn-outline" onclick="loadExample('debug')">Debug Help</button>
+        <button class="btn btn-outline" onclick="loadExample('refactor')">Refactor Code</button>
+      </div>
+    </div>
+
+    <!-- How it works -->
+    <div class="card" style="margin-top:32px;">
+      <h3>How Caching Works</h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:12px;">
+        <div>
+          <div style="color:var(--amber);font-weight:700;margin-bottom:4px;">First Request → MISS</div>
+          <p>Prompt is forwarded to your LLM provider. Response is cached for future use.</p>
+        </div>
+        <div>
+          <div style="color:var(--green);font-weight:700;margin-bottom:4px;">Same/Similar Prompt → HIT</div>
+          <p>Cached response returned instantly. Zero API tokens burned. You save money.</p>
+        </div>
+      </div>
+    </div>
+
+  </section>
+</div>
+
+<footer>
+  <div class="container">
+    TokenShield &copy; 2026. Save tokens on every AI API call.
+  </div>
+</footer>
+
+<script>
+const examples = {
+  react: "Explain the difference between useEffect and useLayoutEffect in React.",
+  python: "What are the best practices for Python list comprehensions vs generator expressions?",
+  debug: "How do I debug a memory leak in a Node.js application?",
+  refactor: "Refactor this function to use async/await instead of callbacks.",
+};
+
+function loadExample(key) {
+  document.getElementById('input').value = examples[key] || '';
+}
+
+async function runDemo() {
+  const text = document.getElementById('input').value.trim();
+  if (!text) return;
+
+  const btn = document.getElementById('demoBtn');
+  const output = document.getElementById('output');
+  const timing = document.getElementById('timing');
+
+  btn.disabled = true;
+  btn.textContent = 'Sending...';
+  output.textContent = 'Checking cache...';
+
+  const apiKey = localStorage.getItem('tokenshield_api_key');
+
+  if (!apiKey) {
+    output.textContent = 'You need a proxy key to test.\n\nSign up at /dashboard to get a free key.';
+    btn.disabled = false;
+    btn.textContent = 'Send Prompt';
+    return;
+  }
+
+  const t0 = performance.now();
+
+  try {
+    // Send as a Claude-format request through the proxy
+    const resp = await fetch('/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Proxy-Key': apiKey,
+        'x-api-key': 'demo-key',
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 256,
+        messages: [{role: 'user', content: text}],
+      }),
+    });
+
+    const elapsed = (performance.now() - t0).toFixed(1);
+
+    const cacheStatus = resp.headers.get('X-Cache-Status') || '?';
+    const tokensSaved = resp.headers.get('X-Tokens-Saved') || '0';
+    const tokensUsed = resp.headers.get('X-Tokens-Used') || '0';
+    const proxyTime = resp.headers.get('X-Proxy-Time-Ms') || elapsed;
+
+    const statusColor = cacheStatus === 'HIT' ? 'var(--green)' : 'var(--amber)';
+    timing.innerHTML = `<span style="color:${statusColor};font-weight:700;">${cacheStatus}</span> · ${proxyTime}ms`;
+
+    if (resp.ok) {
+      const data = await resp.json();
+      let summary = `Cache: ${cacheStatus}\n`;
+      if (cacheStatus === 'HIT') {
+        summary += `Tokens Saved: ${tokensSaved}\n`;
+        summary += `Response Time: ${proxyTime}ms\n`;
+        summary += `\n--- Zero tokens burned! ---\n`;
+      } else {
+        summary += `Tokens Used: ${tokensUsed}\n`;
+        summary += `Response Time: ${proxyTime}ms\n`;
+        summary += `\n--- Cached for next time ---\n`;
+      }
+      summary += `\nResponse:\n${JSON.stringify(data, null, 2).substring(0, 500)}`;
+      output.textContent = summary;
+    } else {
+      const err = await resp.json().catch(() => ({detail: resp.statusText}));
+      output.textContent = JSON.stringify(err, null, 2);
+    }
+  } catch (e) {
+    output.textContent = 'Error: ' + e.message;
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Send Prompt';
+}
+</script>
+
+</body>
+</html>

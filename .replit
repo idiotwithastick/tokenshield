@@ -1,5 +1,9 @@
 run = "pip install -q -r requirements.txt && python main.py"
 entrypoint = "main.py"
+modules = ["python-3.12"]
+
+[nix]
+channel = "stable-24_05"
 
 [deployment]
 run = ["sh", "-c", "pip install -q -r requirements.txt && python main.py"]
@@ -8,3 +12,16 @@ deploymentTarget = "cloudrun"
 [[ports]]
 localPort = 8080
 externalPort = 80
+
+[workflows]
+runButton = "Start TokenShield"
+
+[[workflows.workflow]]
+name = "Start TokenShield"
+mode = "sequential"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pip install -q -r requirements.txt && python main.py"
+waitForPort = 8080
